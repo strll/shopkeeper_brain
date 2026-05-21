@@ -9,8 +9,8 @@ import time
 from abc import ABC, abstractmethod
 from typing import TypeVar, Optional
 
-from knowledge.processor.import_processor.config import ImportConfig, get_config
-from knowledge.processor.import_processor.exceptions import ImportProcessError
+from knowledge.processor.import_process.config import ImportConfig, get_config
+from knowledge.processor.import_process.exceptions import ImportProcessError
 from knowledge.utils.task_util import add_running_task, add_done_task, add_node_duration
 
 T = TypeVar("T")  # 泛型状态类型

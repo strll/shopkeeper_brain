@@ -1,11 +1,10 @@
 import subprocess
-import time
 import threading
-import sys
+import time
 
 # ================= 配置区 =================
 # 替换为你刚才测试用的真实 PDF 路径
-TEST_PDF_PATH = r"D:\pycharm-workspace\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表的使用.pdf"
+TEST_PDF_PATH = r"/knowledge/processor/import_process\temp_dir\万用表的使用.pdf"
 OUTPUT_DIR = r"./test_output"
 
 

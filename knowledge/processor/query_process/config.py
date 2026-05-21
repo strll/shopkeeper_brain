@@ -4,9 +4,10 @@
 集中管理所有配置项，支持环境变量覆盖
 """
 
+import os
 from dataclasses import dataclass, field
 from typing import Set, Optional
-import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,6 +16,7 @@ load_dotenv()
 @dataclass
 class ImportConfig:
     """导入流程配置"""
+
 
     # ==================== 文档处理配置 ====================
     max_content_length: int = 2000  # 切片最大长度
@@ -96,6 +98,29 @@ class ImportConfig:
 
     # ==================== 速率限制 ====================
     requests_per_minute: int = 15  # 图片总结 API 速率限制
+
+    item_name_high_confidence: float  = field(
+        default_factory=lambda: float (os.getenv("ITEM_NAME_HIGH_CONFIDENCE", 0.8))
+    )
+
+    item_name_score_gap: float = field(
+        default_factory=lambda: float(os.getenv("ITEM_NAME_SCORE_GAP", "0.08"))
+    )
+
+
+    # ==================== 商品名对齐配置 ====================
+
+    item_name_mid_confidence: float = field(
+        default_factory=lambda: float(os.getenv("ITEM_NAME_MID_CONFIDENCE", "0.55"))
+    )
+
+    item_name_max_options: int = field(
+        default_factory=lambda: int(os.getenv("ITEM_NAME_MAX_OPTIONS", "3"))
+    )
+
+    # ❌ 确保手动 __init__ 已被删除或注释掉
+    # def __init__(self):
+    #     self.item_name_high_confidence = None
 
     @classmethod
     def from_env(cls) -> "ImportConfig":

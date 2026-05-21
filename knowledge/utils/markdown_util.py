@@ -1,5 +1,6 @@
 import re
 from typing import List
+
 from bs4 import BeautifulSoup
 
 
@@ -26,6 +27,8 @@ class MarkdownTableLinearizer:
 
         if "|" in content:
             content = cls.MD_TABLE_PATTERN.sub(cls._replace_md_table, content)
+
+
 
         return content
 

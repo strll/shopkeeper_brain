@@ -4,9 +4,9 @@ from typing import Dict, Any
 
 from pymilvus.model.hybrid import BGEM3EmbeddingFunction
 
-from knowledge.processor.import_processor.base import *
-from knowledge.processor.import_processor.exceptions import *
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.base import *
+from knowledge.processor.import_process.exceptions import *
+from knowledge.processor.import_process.state import ImportGraphState
 from knowledge.utils.back_state_util import BackStateUtil
 from knowledge.utils.client.ai_clients import AIClients
 
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     setup_logging()
 
     base_temp_dir = Path(
-        r"D:\pycharm-workspace\shopkeeper_brain\knowledge\processor\import_processor\temp_dir")
+        r"/knowledge/processor/import_process\temp_dir")
 
     input_path = base_temp_dir / "chunks.json"
     output_path = base_temp_dir / "chunks_vector.json"

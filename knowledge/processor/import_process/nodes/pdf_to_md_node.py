@@ -4,9 +4,9 @@ import subprocess
 from pathlib import Path
 from typing import Tuple
 
-from knowledge.processor.import_processor.base import *
-from knowledge.processor.import_processor.exceptions import *
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.base import *
+from knowledge.processor.import_process.exceptions import *
+from knowledge.processor.import_process.state import ImportGraphState
 from knowledge.utils.back_state_util import BackStateUtil
 
 

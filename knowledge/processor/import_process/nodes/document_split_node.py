@@ -5,8 +5,8 @@ from typing import List, Dict, Any
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from knowledge.processor.import_processor.base import *
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.base import *
+from knowledge.processor.import_process.state import ImportGraphState
 from knowledge.utils.back_state_util import BackStateUtil
 from knowledge.utils.markdown_util import MarkdownTableLinearizer
 
@@ -255,7 +255,7 @@ class DocumentSplitNode(BaseNode):
 if __name__ == '__main__':
     document_split_node = DocumentSplitNode()
 
-    md_path = r"D:\pycharm-workspace\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表的使用\hybrid_auto\万用表的使用_new.md"
+    md_path = r"/knowledge/processor/import_process\temp_dir\万用表的使用\hybrid_auto\万用表的使用_new.md"
 
     with open(md_path, "r", encoding="utf-8") as f:
         md_content = f.read()

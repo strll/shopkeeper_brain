@@ -3,13 +3,13 @@ import json
 from langgraph.graph import END
 from langgraph.graph.state import *
 
-from knowledge.processor.import_processor.nodes.document_split_node import DocumentSplitNode
-from knowledge.processor.import_processor.nodes.embedding_chunks_node import EmbeddingChunksNode
-from knowledge.processor.import_processor.nodes.entry_node import EntryNode
-from knowledge.processor.import_processor.nodes.import_milvus_node import ImportMilvusNode
-from knowledge.processor.import_processor.nodes.item_name_recognition_node import ItemNameRecognitionNode
-from knowledge.processor.import_processor.nodes.md_to_img_node import *
-from knowledge.processor.import_processor.nodes.pdf_to_md_node import PdfToMdNode
+from knowledge.processor.import_process.nodes.document_split_node import DocumentSplitNode
+from knowledge.processor.import_process.nodes.embedding_chunks_node import EmbeddingChunksNode
+from knowledge.processor.import_process.nodes.entry_node import EntryNode
+from knowledge.processor.import_process.nodes.import_milvus_node import ImportMilvusNode
+from knowledge.processor.import_process.nodes.item_name_recognition_node import ItemNameRecognitionNode
+from knowledge.processor.import_process.nodes.md_to_img_node import *
+from knowledge.processor.import_process.nodes.pdf_to_md_node import PdfToMdNode
 
 
 def import_router(state: ImportGraphState):

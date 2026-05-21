@@ -8,9 +8,9 @@ from typing import *
 from openai import OpenAI
 from pypdfium2._helpers.pageobjects import ImageInfo
 
-from knowledge.processor.import_processor.base import *
-from knowledge.processor.import_processor.exceptions import *
-from knowledge.processor.import_processor.state import *
+from knowledge.processor.import_process.base import *
+from knowledge.processor.import_process.exceptions import *
+from knowledge.processor.import_process.state import *
 from knowledge.utils.back_state_util import BackStateUtil
 from knowledge.utils.client.ai_clients import AIClients
 from knowledge.utils.client.storage_clients import StorageClients

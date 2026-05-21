@@ -6,9 +6,9 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 from pymilvus import MilvusClient, DataType
 
-from knowledge.processor.import_processor.base import *
-from knowledge.processor.import_processor.exceptions import *
-from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_process.base import *
+from knowledge.processor.import_process.exceptions import *
+from knowledge.processor.import_process.state import ImportGraphState
 from knowledge.prompt.import_prompt import ITEM_NAME_SYSTEM_PROMPT, ITEM_NAME_USER_PROMPT_TEMPLATE
 from knowledge.utils.back_state_util import BackStateUtil
 from knowledge.utils.client.ai_clients import AIClients
