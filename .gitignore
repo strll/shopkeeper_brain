@@ -1,0 +1,4 @@
+/knowledge/.env
+/knowledge/.venv/
+/knowledge/processor/import_processor/temp_dir/
+/knowledge/temp_data/
