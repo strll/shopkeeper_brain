@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -10,6 +10,7 @@ load_dotenv()
 
 from typing import Optional
 from pymilvus import MilvusClient, WeightedRanker, AnnSearchRequest
+
 milvus_client: Optional[MilvusClient] = None
 
 
@@ -35,7 +36,6 @@ def get_milvus_client() -> Optional[MilvusClient]:
         return None
 
 
-
 # ------------------------------------------------------------------
 # 混合检索
 # ------------------------------------------------------------------
@@ -49,6 +49,7 @@ def create_hybrid_search_requests(dense_vector,
                                   dense_params=None,
                                   sparse_params=None,
                                   expr=None,
+                                  expr_params=None,
                                   limit=5):
     """
     创建混合搜索请求
@@ -73,6 +74,8 @@ def create_hybrid_search_requests(dense_vector,
         anns_field="dense_vector",
         param=dense_params,
         expr=expr,
+
+        expr_params=expr_params,
         limit=limit
     )
 
@@ -82,6 +85,7 @@ def create_hybrid_search_requests(dense_vector,
         anns_field="sparse_vector",
         param=sparse_params,
         expr=expr,
+        expr_params=expr_params,
         limit=limit
     )
 
@@ -98,7 +102,8 @@ def execute_hybrid_search_query(milvus_client: MilvusClient,
                                 norm_score=False,
                                 limit=5,
                                 output_fields=None,
-                                search_params=None):
+                                search_params=None
+                                ):
     """
     执行混合搜索
     :param collection_name: 集合名称
@@ -137,15 +142,12 @@ def execute_hybrid_search_query(milvus_client: MilvusClient,
         return None
 
 
-
-
-
 def fetch_chunks_by_chunk_ids(
-    collection_name: str,
-    chunk_ids,
-    *,
-    output_fields=None,
-    batch_size: int = 100,
+        collection_name: str,
+        chunk_ids,
+        *,
+        output_fields=None,
+        batch_size: int = 100,
 ):
     """
     通过 chunk_id（主键）批量查询切片字段
@@ -158,11 +160,10 @@ def fetch_chunks_by_chunk_ids(
         # 默认返回字段需与 collection schema 保持一致
         output_fields = ["chunk_id", "content", "title", "file_title", "item_name"]
 
-
     results = []
     # 分批，避免一次性过大
     for i in range(0, len(chunk_ids), batch_size):
-        batch = chunk_ids[i : i + batch_size]
+        batch = chunk_ids[i: i + batch_size]
         #  get（主键直取）
         try:
             got = client.get(collection_name=collection_name, ids=batch, output_fields=output_fields)

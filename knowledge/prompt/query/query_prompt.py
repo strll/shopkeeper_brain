@@ -28,7 +28,7 @@ ITEM_NAME_EXTRACT_TEMPLATE = """
 USER_HYDE_PROMPT_TEMPLATE = """请模拟一段产品技术文档/说明书中的内容，该内容能够回答以下用户问题。
 
 相关产品名:
-{item_hint}
+{item_names}
 
 用户问题：
 {rewritten_query}
