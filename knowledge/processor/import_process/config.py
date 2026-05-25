@@ -4,12 +4,13 @@
 集中管理所有配置项，支持环境变量覆盖
 """
 
+import os
 from dataclasses import dataclass, field
 from typing import Set, Optional
-import os
+
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 
 @dataclass
@@ -26,6 +27,12 @@ class ImportConfig:
 
     image_extensions: Set[str] = field(
         default_factory=lambda: {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
+    )
+
+
+
+    mcp_dashscope_base_url: str = field(
+        default_factory=lambda: os.getenv("MCP_DASHSCOPE_BASE_URL", "")
     )
 
     # ==================== LLM 配置 ====================
@@ -81,6 +88,12 @@ class ImportConfig:
     )
     embedding_batch_size: int = 8
 
+    rrf_max_results: int = field(
+        default_factory=lambda: int(os.getenv("RRF_MAX_RESULTS", "10"))
+    )
+    rrf_k: int = field(
+        default_factory=lambda: int(os.getenv("RRF_K", "60"))
+    )
     # ==================== 速率限制 ====================
     requests_per_minute: int = 15  # 图片总结 API 速率限制
 
