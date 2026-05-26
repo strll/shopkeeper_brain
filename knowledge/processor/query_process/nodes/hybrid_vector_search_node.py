@@ -50,7 +50,7 @@ class HybridVectorSearch(BaseNode):
                                                             collection_name=self.config.chunks_collection,
                                                             search_requests=hybrid_search_req,
                                                             norm_score=True,
-                                                            output_fields=["chunk_id", "content", "item_name"]
+                                                            output_fields=["chunk_id", "content", "item_name",'title']
                                                             )
             if not hybrid_search_res or not hybrid_search_res[0]:
                 return state

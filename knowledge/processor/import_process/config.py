@@ -97,6 +97,171 @@ class ImportConfig:
     # ==================== 速率限制 ====================
     requests_per_minute: int = 15  # 图片总结 API 速率限制
 
+
+    bge_reranker_large: str = field(
+        default_factory=lambda: os.getenv("BGE_RERANKER_LARGE", "")
+    )
+
+    # ==================== 知识图谱 (Neo4j) 配置 ====================
+    neo4j_uri: str = field(
+        default_factory=lambda: os.getenv("NEO4J_URI", "bolt://localhost:7687")
+    )
+    neo4j_user: str = field(
+        default_factory=lambda: os.getenv("NEO4J_USER", "neo4j")
+    )
+    neo4j_password: str = field(
+        default_factory=lambda: os.getenv("NEO4J_PASSWORD", "")
+    )
+
+    # 实体与图谱检索控制
+    entity_alignment_min_score: float = field(
+        default_factory=lambda: float(os.getenv("ENTITY_ALIGNMENT_MIN_SCORE", "0.8"))
+    )
+    kg_max_seeds: int = field(
+        default_factory=lambda: int(os.getenv("KG_MAX_SEEDS", "5"))
+    )
+    kg_max_triplets: int = field(
+        default_factory=lambda: int(os.getenv("KG_MAX_TRIPLETS", "15"))
+    )
+    kg_max_chunks: int = field(
+        default_factory=lambda: int(os.getenv("KG_MAX_CHUNKS", "5"))
+    )
+
+    # ==================== 融合与重排补充配置 ====================
+    rerank_max_top_k: int = field(
+        default_factory=lambda: int(os.getenv("RERANK_MAX_TOP_K", "5"))
+    )
+    rrf_kg_weight: float = field(
+        default_factory=lambda: float(os.getenv("RRF_KG_WEIGHT", "0.3"))
+    )
+
+    # ==================== 商品确认节点配置 ====================
+    item_name_high_confidence: float = field(
+        default_factory=lambda: float(os.getenv("ITEM_NAME_HIGH_CONFIDENCE", "0.85"))
+    )
+    dense_weight: float = field(
+        default_factory=lambda: float(os.getenv("DENSE_WEIGHT", "0.6"))
+    )
+    sparse_weight: float = field(
+        default_factory=lambda: float(os.getenv("SPARSE_WEIGHT", "0.4"))
+    )
+
+
+    # ==================== Rerank 配置 ====================
+
+    rerank_min_top_k: int = field(
+        default_factory=lambda: int(os.getenv("RERANK_MIN_TOP_K", "3"))
+    )
+    rerank_gap_ratio: float = field(
+        default_factory=lambda: float(os.getenv("RERANK_GAP_RATIO", "0.25"))
+    )
+    rerank_gap_abs: float = field(
+        default_factory=lambda: float(os.getenv("RERANK_GAP_ABS", "0.5"))
+    )
+
+
+
+
+
+
+
+
+
+    # ==================== 文本处理配置 ====================
+    max_context_chars: int = field(
+        default_factory=lambda: int(os.getenv("MAX_CONTEXT_CHARS", "12000"))
+    )
+
+    # ==================== Rerank 配置 ====================
+    rerank_max_top_k: int = field(
+        default_factory=lambda: int(os.getenv("RERANK_MAX_TOP_K", "10"))
+    )
+    rerank_min_top_k: int = field(
+        default_factory=lambda: int(os.getenv("RERANK_MIN_TOP_K", "3"))
+    )
+    rerank_gap_ratio: float = field(
+        default_factory=lambda: float(os.getenv("RERANK_GAP_RATIO", "0.25"))
+    )
+    rerank_gap_abs: float = field(
+        default_factory=lambda: float(os.getenv("RERANK_GAP_ABS", "0.5"))
+    )
+
+    # ==================== RRF 配置 ====================
+    rrf_k: int = field(
+        default_factory=lambda: int(os.getenv("RRF_K", "60"))
+    )
+    rrf_kg_weight: float = field(
+        default_factory=lambda: float(os.getenv("RRF_KG_WEIGHT", "0.7"))
+    )
+    rrf_max_results: int = field(
+        default_factory=lambda: int(os.getenv("RRF_MAX_RESULTS", "10"))
+    )
+
+    # ==================== 检索配置 ====================
+    embedding_search_limit: int = field(
+        default_factory=lambda: int(os.getenv("EMBEDDING_SEARCH_LIMIT", "10"))
+    )
+    hyde_search_limit: int = field(
+        default_factory=lambda: int(os.getenv("HYDE_SEARCH_LIMIT", "5"))
+    )
+
+    # ==================== 商品确认节点配置 ====================
+    item_name_high_confidence: float = field(
+        default_factory=lambda: float(os.getenv("ITEM_NAME_HIGH_CONFIDENCE", "0.7")) # 直接给的（压测给到）--->RAG评估（了解）
+    )
+    item_name_mid_confidence: float = field(
+        default_factory=lambda: float(os.getenv("ITEM_NAME_MID_CONFIDENCE", "0.6"))  # 直接给的（压测给到）--->RAG评估（了解）
+    )
+    item_name_max_options: int = field(
+        default_factory=lambda: int(os.getenv("ITEM_NAME_MAX_OPTIONS", "5"))
+    )
+    item_name_dense_weight: float = field(
+        default_factory=lambda: float(os.getenv("ITEM_NAME_DENSE_WEIGHT", "0.5"))
+    )
+    item_name_sparse_weight: float = field(
+        default_factory=lambda: float(os.getenv("ITEM_NAME_SPARSE_WEIGHT", "0.5"))
+    )
+
+    # ==================== 知识图谱配置 ====================
+    kg_entity_align_min_score: Optional[float] = field(
+        default_factory=lambda: (
+            float(os.getenv("KG_ENTITY_ALIGN_MIN_SCORE"))
+            if os.getenv("KG_ENTITY_ALIGN_MIN_SCORE")
+            else None
+        )
+    )
+    kg_max_seed_candidates: int = field(
+        default_factory=lambda: int(os.getenv("KG_MAX_SEED_CANDIDATES", "3"))
+    )
+    kg_max_total_seeds: int = field(
+        default_factory=lambda: int(os.getenv("KG_MAX_TOTAL_SEEDS", "30"))
+    )
+    kg_max_triples_per_seed: int = field(
+        default_factory=lambda: int(os.getenv("KG_MAX_TRIPLES_PER_SEED", "50"))
+    )
+    kg_max_total_triples: int = field(
+        default_factory=lambda: int(os.getenv("KG_MAX_TOTAL_TRIPLES", "50"))
+    )
+    kg_max_total_chunks: int = field(
+        default_factory=lambda: int(os.getenv("KG_MAX_TOTAL_CHUNKS", "50"))
+    )
+
+
+
+
+
+    neo4j_username: str = field(
+        default_factory=lambda: os.getenv("NEO4J_USERNAME", "")
+    )
+
+    neo4j_database: str = field(
+        default_factory=lambda: os.getenv("NEO4J_DATABASE", "neo4j")
+    )
+
+
+
+
+
     @classmethod
     def from_env(cls) -> "ImportConfig":
         """从环境变量加载配置"""
