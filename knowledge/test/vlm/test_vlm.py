@@ -1,6 +1,8 @@
-from openai import OpenAI
 import os
+
 from dotenv import load_dotenv
+from openai import OpenAI
+
 load_dotenv(override=True)
 # 初始化OpenAI客户端
 # api_key = os.getenv("OPENAI_API_KEY")
@@ -16,10 +18,6 @@ client = OpenAI(
 
     base_url=os.getenv("OPENAI_API_BASE")
 )
-# client = OpenAI(
-#     api_key ="sk-083e79988f944783a74d4aa219435824",
-#     base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
-# )
 
 
 
