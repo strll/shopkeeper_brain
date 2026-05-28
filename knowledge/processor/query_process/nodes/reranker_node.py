@@ -151,10 +151,10 @@ class RerankerNode(BaseNode):
                 self.logger.info(f"断崖检测: 断崖位置为{i+1}，当前文档来源为{current_doc_source}，下一文档来源为{next_doc_source}")
 
 
-            cut_off_docs=refine_docs[:cut_off]
+        cut_off_docs=refine_docs[:cut_off]
             # 绝对分数底线过滤
-            rerank_min_score = getattr(self.config, 'rerank_min_score', None)
-            if rerank_min_score is not None:
+        rerank_min_score = getattr(self.config, 'rerank_min_score', None)
+        if rerank_min_score is not None:
                 filtered_docs = [d for d in cut_off_docs if (d.get("score") or 0) >= rerank_min_score]
                 if len(filtered_docs) < low_bound:
                     self.logger.warning(

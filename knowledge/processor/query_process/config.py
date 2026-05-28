@@ -10,7 +10,7 @@ from typing import Set, Optional
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 
 @dataclass
@@ -100,7 +100,7 @@ class ImportConfig:
     requests_per_minute: int = 15  # 图片总结 API 速率限制
 
     item_name_high_confidence: float  = field(
-        default_factory=lambda: float (os.getenv("ITEM_NAME_HIGH_CONFIDENCE", 0.8))
+        default_factory=lambda: float (os.getenv("ITEM_NAME_HIGH_CONFIDENCE", 0.75))
     )
 
     item_name_score_gap: float = field(

@@ -1,5 +1,5 @@
 import json
-from typing import Tuple, Any, Dict
+from typing import Tuple, Any, Dict, Union
 
 from knowledge.processor.import_process.exceptions import StateFieldError
 from knowledge.processor.query_process.base import BaseNode
@@ -16,19 +16,19 @@ logger = logging.getLogger(__name__)
 class HybridVectorSearch(BaseNode):
     name = "hybrid_vector_search"
 
-    def process(self, state: QueryGraphState) -> QueryGraphState:
+    def process(self, state: QueryGraphState) -> Union[QueryGraphState,Dict[str,Any]]:
 
         rewritten_query, item_names = self._validate_state(state)
         try:
             bge_m3_client = AIClients.get_bge_m3_client()
         except ConnectionError as e:
             logger.error(f"获取嵌入模型失败{str(e)}")
-            return state
+            return {}
         try:
             milvue_client = StorageClients.get_milvus_client()
         except ConnectionError as e:
             logger.error(f"获取milvus客户端失败{str(e)}")
-            return state
+            return {}
         try:
             embed_query_vector = generate_hybrid_embeddings(embedding_model=bge_m3_client,
                                                             embedding_documents=[rewritten_query])
@@ -36,7 +36,7 @@ class HybridVectorSearch(BaseNode):
 
         except Exception as e:
             logger.error(f"用户的问题是{rewritten_query} 生成嵌入向量失败{str(e)}")
-            return state
+            return {}
 
         try:
             hybrid_search_req = create_hybrid_search_requests(dense_vector=embed_query_vector["dense"][0],
@@ -53,14 +53,15 @@ class HybridVectorSearch(BaseNode):
                                                             output_fields=["chunk_id", "content", "item_name",'title']
                                                             )
             if not hybrid_search_res or not hybrid_search_res[0]:
-                return state
+                return {}
 
             state['embedding_chunks'] = hybrid_search_res[0]
-            return state
+            #return state
+            return {"embedding_chunks": hybrid_search_res[0]}
 
         except Exception as e:
             logger.error(f"用户的问题是{rewritten_query} 创建向量搜索请求失败{str(e)}")
-            return state
+            return {}
 
     def _validate_state(self, state: QueryGraphState) -> Tuple[str, list[str]]:
         rewritten_query = state.get("rewritten_query")
@@ -100,3 +101,4 @@ if __name__ == '__main__':
     result = vector_search.process(state)
     for f in result.get("embedding_chunks"):
         print(json.dumps(f, ensure_ascii=False, indent=2))
+

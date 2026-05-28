@@ -5,13 +5,12 @@
 """
 
 import logging
-import time
 from abc import ABC, abstractmethod
 from typing import TypeVar, Optional
 
 from knowledge.processor.import_process.config import ImportConfig, get_config
 from knowledge.processor.import_process.exceptions import ImportProcessError
-from knowledge.utils.task_util import add_running_task, add_done_task, add_node_duration
+from knowledge.utils.task_util import add_running_task, add_done_task
 
 T = TypeVar("T")  # 泛型状态类型
 
@@ -64,31 +63,25 @@ class BaseNode(ABC):
         Raises:
             ImportProcessError: 节点执行失败时抛出
         """
-        task_id=state.get("task_id","")
-        start_time=time.time()
+        task_id = state.get("task_id", "")
         try:
             # 1. 开始准备执行节点
             self.logger.info(f"--- {self.name} 开始 ---")
-
             if task_id:
-                add_running_task(task_id,self.name)
+                # 1.1 更新节点状态
+                add_running_task(task_id, self.name)
+
             # 2. 执行节点
             result = self.process(state)
-            end_time=time.time()
-
-            if task_id:
-                add_done_task(task_id,self.name)
-                add_node_duration(task_id,self.name,duration=end_time-start_time)
 
             # 3. 执行节点成功
             self.logger.info(f"--- {self.name} 完成 ---")
-
+            if task_id:
+                # 3.1 更新状态
+                add_done_task(task_id, self.name)
             return result
         except Exception as e:
             self.logger.error(f"{self.name} 执行失败: {e}")
-            if task_id:
-                add_done_task(task_id,self.name,status="failed")
-
             raise ImportProcessError(
                 message=str(e),
                 node_name=self.name,

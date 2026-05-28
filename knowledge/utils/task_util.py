@@ -1,18 +1,12 @@
-from typing import Dict, List
 from collections import defaultdict
+from typing import Dict, List
 
-
-"""
-任务id: 主要追踪上传文件（任务）的状态流程的
-上传一个文件就属于一个任务（唯一的任务id）---未来如果想知道上传的这个文件处理到哪里了就需要用任务id来查询
-"""
 # 只要访问不存在的 key，自动帮你初始化为 []
 _tasks_running_list: Dict[str, List[str]] = defaultdict(list)
 _tasks_done_list: Dict[str, List[str]] = defaultdict(list)
-_tasks_duration: Dict[str, Dict[str, float]] = defaultdict(dict)
 
-# 只要访问不存在的 key，自动帮你初始化为 {} 查询时候用
-# _tasks_result: Dict[str, Dict[str, str]] = defaultdict(dict)
+# 只要访问不存在的 key，自动帮你初始化为 {}
+_tasks_result: Dict[str, Dict[str, str]] = defaultdict(dict)
 
 _tasks_status: Dict[str, str] = {}
 
@@ -22,14 +16,25 @@ TASK_STATUS_FAILED = "failed"  # 任务失败
 
 _NODE_NAME_TO_CN: Dict[str, str] = {
     "upload_file": "上传文件",
-    "entry_node": "检查文件",
+    "entry": "检查文件",
     "pdf_to_md_node": "PDF转Markdown",
-    "md_to_img_node": "Markdown图片处理",
+    "md_img_node": "Markdown图片处理",
     "document_split_node": "文档切分",
-    "item_name_recognition_node": "主体名称识别",
-    "embedding_chunk_node": "向量生成",
+    "item_name_recognition": "主体名称识别",
+    "beg_embedding_chunks_node": "向量生成",
     "import_milvus_node": "导入向量数据库",
+    "knowledge_graph_node": "导入知识图谱",
     "__end__": "处理完成",
+
+    # --- Query 流程节点（kb/query_process/main_graph.py）---
+    "item_name_confirm_node": "确认问题产品",
+    "answer_output_node": "生成答案",
+    "rerank_node": "重排序",
+    "rrf_node": "倒排融合",
+    "mcp_search_node": "网络搜索",
+    "vector_search_node": "切片搜索",
+    "hyde_search_node": "切片搜索(假设性文档)",
+    "kg_search_node": "查询知识图谱"
 
 }
 
@@ -85,41 +90,27 @@ def update_task_status(task_id: str, status_name: str) -> None:
     # 1. 更新指定任务的总体运行状态（如 processing 等）
     _tasks_status[task_id] = status_name
 
-#
-# def set_task_result(task_id: str, key: str, value: str) -> None:
-#     """
-#     存储任务结果字段（如 answer / error）。
-#     """
-#     _tasks_result[task_id][key] = value
 
-
-# def get_task_result(task_id: str, key: str, default: str = "") -> str:
-#     """
-#     获取任务结果字段（如 answer / error）。
-#     """
-#     return _tasks_result.get(task_id, {}).get(key, default)
-#
-
-
-def add_node_duration(task_id: str, node_name: str, duration: float) -> None:
-    """记录节点耗时（秒）"""
-    cn_name = _to_cn(node_name)
-    _tasks_duration[task_id][cn_name] = round(duration, 2)
-
-def get_node_durations(task_id: str) -> Dict[str, float]:
-    """获取所有节点的耗时"""
-    return dict(_tasks_duration.get(task_id, {}))
-
-def get_task_info(task_id: str) -> Dict[str, any]:
+def set_task_result(task_id: str, key: str, value: str) -> None:
     """
-    获取任务的全局信息（状态 + 运行中节点 + 已完成节点）
-    :param task_id: 任务ID
-    :return: 包含 status、running_list、done_list 的字典
+    存储任务结果字段（如 answer / error）。
     """
-    return {
-        "status": get_task_status(task_id),
-        "running_list": get_running_task_list(task_id),
-        "done_list": get_done_task_list(task_id),
-        "durations": get_node_durations(task_id)
-    }
+    _tasks_result[task_id][key] = value
 
+
+def get_task_result(task_id: str, key: str, default: str = "") -> str:
+    """
+    获取任务结果字段（如 answer / error）。
+    """
+    return _tasks_result.get(task_id, {}).get(key, default)
+
+
+def clear_task(task_id: str):
+    # 1. 安全移除该任务的运行节点记录
+    _tasks_running_list.pop(task_id, None)
+    # 2. 安全移除该任务的已完成节点记录
+    _tasks_done_list.pop(task_id, None)
+    # 3. 安全移除该任务的总体状态记录
+    _tasks_status.pop(task_id, None)
+    # 4. 安全移除该任务的结果记录
+    # _tasks_result.pop(task_id, None)

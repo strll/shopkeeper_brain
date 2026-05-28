@@ -1,118 +1,181 @@
-import json
+"""查询流程主图
 
+使用 LangGraph 构建知识库查询工作流。
+"""
+
+from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
 from langgraph.graph.state import CompiledStateGraph
-from knowledge.processor.import_process.state import ImportGraphState
-from knowledge.processor.import_process.nodes.pdf_to_md_node import PdfToMdNode
-from knowledge.processor.import_process.nodes.entry_node import EntryNode
-from knowledge.processor.import_process.nodes.md_img_node import MarkDownImageNode
-from knowledge.processor.import_process.nodes.document_split_node import DocumentSplitNode
-from knowledge.processor.import_process.nodes.item_name_recognition_node import ItemNameRecognitionNode
-from knowledge.processor.import_process.nodes.bge_embedding_chunks_node import BgeEmbeddingChunksNode
-from knowledge.processor.import_process.nodes.import_milvus_node  import ImportMilvusNode
-from knowledge.processor.import_process.nodes.kg_graph_node import KnowLedgeGraphNode
-from knowledge.processor.import_process.nodes.md_img_node import MarkDownImageNode
-from knowledge.processor.import_process.state import create_default_state
-from knowledge.processor.import_process.base import setup_logging
+
+from knowledge.processor.query_process.nodes.hybrid_vector_search_node import HybridVectorSearch
+from knowledge.processor.query_process.nodes.item_name_confirmed_node import ItemNameConfirmedNode
+from knowledge.processor.query_process.nodes.reranker_node import RerankerNode
+from knowledge.processor.query_process.nodes.rrf_merge_node import RrfMergeNode
+from knowledge.processor.query_process.nodes.web_mcp_search_node import WebMcpSearchNode
+from knowledge.processor.query_process.state import QueryGraphState
+
+# 加载环境变量
+load_dotenv()
 
 
-def import_router(state: ImportGraphState):
-    if state.get('is_md_read_enabled'):
-        return "md_img_node"
-    if state.get('is_pdf_read_enabled'):
-        return "pdf_to_md_node"
-    return END  # 安全降级
+def route_after_item_confirm(state: QueryGraphState) -> bool:
+    """商品名称确认后的路由逻辑。
 
+    根据是否已有答案决定是否跳过搜索直接输出。
 
-def create_import_graph() -> CompiledStateGraph:
-    """
-    定义导入业务的graph状态拓扑谱（langgraph构建流水线）整个流水线各个节点要读取或者写入的节点。
+    Args:
+        state: 查询图状态。
+
     Returns:
+        True 表示已有答案需要跳过搜索，False 表示继续搜索流程。
+    """
+    if state.get("answer"):
+        return True
+    return False
 
+
+def create_query_graph() -> CompiledStateGraph:
+    """创建查询流程图。
+
+    Returns:
+        编译后的 StateGraph 实例。
+
+    流程结构::
+
+        item_name_confirm
+              │
+              ├── (有答案) ──────────────────────────> answer_output
+              │                                            │
+              └── (无答案)                                  │
+                   │                                       │
+                   v                                       │
+              multi_search                                 │
+                   │                                       │
+             ┌─────┼──────────┐                            │
+             │     │          │                            │
+             v     v          v                            │
+        embedding  hyde    web_mcp                         │
+             │     │          │                            │
+             └─────┼──────────┘                            │
+                   │                                       │
+                   v                                       │
+                 join                                      │
+                   │                                       │
+                   v                                       │
+                  rrf                                      │
+                   │                                       │
+                   v                                       │
+                rerank                                     │
+                   │                                       │
+                   v                                       │
+             answer_output <───────────────────────────────┘
+                   │
+                   v
+                  END
     """
 
-    # 1. 定义状态图
-    graph_pineline = StateGraph(ImportGraphState)  # type:ignore
+    # 1. 定义LangGraph工作流
+    workflow = StateGraph(QueryGraphState)  # type:ignore
 
-    # 2. 定义节点（入口、结束节点、自己需要添加的）
-    # 2.1 定义入口节点
-    graph_pineline.set_entry_point("entry_node")
-
-    # 2.2 添加剩下的节点
+    # 2. 实例化节点
+    from knowledge.processor.query_process.nodes.hyde_vector_search_node import HydeVectorSearchNode
+    from knowledge.processor.query_process.nodes.answer_output_node import AnswerOutputNode
     nodes = {
-        "entry_node": EntryNode(),
-        "pdf_to_md_node": PdfToMdNode(),
-        "md_img_node": MarkDownImageNode(),
-        "document_split_node":DocumentSplitNode(),
-        "item_name_rec_node":ItemNameRecognitionNode(),
-        "bge_embedding_node":BgeEmbeddingChunksNode(),
-        "import_milvus_node":ImportMilvusNode(),
-        "kg_node":KnowLedgeGraphNode()
-    }
-    for key, value in nodes.items():
-        graph_pineline.add_node(key, value)
-
-    # 3. 定义边（顺序边、条件边）
-    # source:  路由开始节点
-    # path:    路由函数
-    # path_map 路由函数的映射
-
-    graph_pineline.add_conditional_edges("entry_node",
-                                         import_router,
-                                         {
-                                             "md_img_node": "md_img_node",
-                                             "pdf_to_md_node": "pdf_to_md_node",
-                                             END: END
-                                         }
-                                         )
-
-    # graph_pineline.add_conditional_edges()
-    graph_pineline.add_edge("entry_node", "pdf_to_md_node")
-    graph_pineline.add_edge("pdf_to_md_node","md_img_node")
-    graph_pineline.add_edge("md_img_node","document_split_node")
-    graph_pineline.add_edge("document_split_node","item_name_rec_node")
-    graph_pineline.add_edge("item_name_rec_node","bge_embedding_node")
-    graph_pineline.add_edge("bge_embedding_node","import_milvus_node")
-    graph_pineline.add_edge("import_milvus_node","kg_node")
-    graph_pineline.add_edge("kg_node",END)
-
-    # 4. 编译（编排）
-    return graph_pineline.compile()
-
-
-kb_import__graph_app = create_import_graph()
-
-
-# 测试使用
-def run_import_graph(import_file_path: str, file_dir: str):
-    # 1. 构建state
-    state = {
-        "import_file_path": import_file_path,
-        "file_dir": file_dir
+        "item_name_confirmed_node": ItemNameConfirmedNode(),
+        "multi_search": lambda x: x,  # 虚拟节点
+        "hybrid_vector_search_node": HybridVectorSearch(),
+        "hyde_vector_search_node": HydeVectorSearchNode(),
+        "web_mcp_search_node": WebMcpSearchNode(),
+        "join": lambda x: {},  # 多路搜索汇合（虚节点）
+        "rrf_merge_node": RrfMergeNode(),
+        "reranker_node": RerankerNode(),
+        "answer_output_node": AnswerOutputNode(),
     }
 
-    init_state = create_default_state(**state)  # 发生了解包
+    # 3. 添加节点
+    for name, node in nodes.items():
+        workflow.add_node(name, node)  # type:ignore
 
-    # 2. 调用stream(用流式获取每一个节点的处理情况：event事件[节点名字 节点处理后的状态])
-    final_state = None
-    for event in kb_import__graph_app.stream(init_state):
-        for node_name, state in event.items():
-            print(f"运行节点的:{node_name}")
-            final_state = state
+    # 4. 设置入口点
+    workflow.set_entry_point("item_name_confirmed_node")
 
-    return final_state
+    # 5. 添加条件边：商品名称确认后根据是否有答案路由
+    workflow.add_conditional_edges(
+        "item_name_confirmed_node",
+        route_after_item_confirm,
+        {
+            False: "multi_search",
+            True: "answer_output_node",
+        },
+    )
+
+    # 6. 多路搜索分发（并行执行）
+    workflow.add_edge("multi_search", "hybrid_vector_search_node")
+    workflow.add_edge("multi_search", "hyde_vector_search_node")
+    workflow.add_edge("multi_search", "web_mcp_search_node")
+
+    # 7. 多路搜索汇合
+    workflow.add_edge("hybrid_vector_search_node", "join")
+    workflow.add_edge("hyde_vector_search_node", "join")
+    workflow.add_edge("web_mcp_search_node", "join")
+
+    # 8. 顺序边
+    workflow.add_edge("join", "rrf_merge_node")
+    workflow.add_edge("rrf_merge_node", "reranker_node")
+    workflow.add_edge("reranker_node", "answer_output_node")
+    workflow.add_edge("answer_output_node", END)
+
+    # 9. 返回可运行的状态
+    return workflow.compile()
 
 
-if __name__ == '__main__':
-    setup_logging()
+# 创建全局图实例
+query_app = create_query_graph()
 
-    import_file_path = r"D:\develop\develop\workspace\pycharm\251020\shopkeeper_brain\knowledge\processor\import_process\import_temp_dir\万用表的使用.pdf"
-    file_dir = r"D:\develop\develop\workspace\pycharm\251020\shopkeeper_brain\knowledge\processor\import_process\import_temp_dir"
-    # 1. 测试编排流程
-    final_state = run_import_graph(import_file_path=import_file_path, file_dir=file_dir)
-    print(json.dumps(final_state, indent=2, ensure_ascii=False))
+if __name__ == "__main__":
+    print("=" * 60)
+    print("开始测试: 查询流程主图 (main_graph)")
+    print("=" * 60)
 
-    # 2.打印图结构（ASCII 可视化）# 1. 单独安装：pip install grandalf 2.(单独安装还出错)  【pydantic：定义数据模型 】pip uninstall gradio  3. 单独安装 pip install grandalf 解决冲突
-    print("-" * 50)
-    print("图结构:")
-    kb_import__graph_app.get_graph().print_ascii()
+    # ---- 测试场景 1：商品名明确，走完整 pipeline ----
+    # print("\n【场景 1】: 商品名明确，走完整 pipeline")
+    # print("-" * 60)
+    #
+    # mock_state_1 = {
+    #     "original_query": "RS-12 数字万用表如何测量直流电压？",
+    #     "session_id": "test_session_main_graph",
+    #     "task_id": "test_task_001",
+    #     "is_stream": False,
+    # }
+    #
+    # result_1 = query_app.invoke(mock_state_1)
+    #
+    #
+    # print(f"\n  【结果】:")
+    # print(f"  商品名: {result_1.get('item_names')}")
+    # print(f"  重写查询: {result_1.get('rewritten_query')}")
+    # answer_1 = result_1.get("answer", "")
+    # print(f"  答案: {answer_1[:200]}..." if len(answer_1) > 200 else f"  答案: {answer_1}")
+
+    # ---- 测试场景 2：商品名模糊，被拦截 ----
+    print("\n\n【场景 2】: 商品名模糊，被拦截返回选项")
+    print("-" * 60)
+
+    mock_state_2 = {
+        "original_query": "万用表怎么测电压？",
+        "session_id": "test_session_main_graph",
+        "task_id": "test_task_002",
+        "is_stream": False,
+    }
+
+    print(f"  查询: {mock_state_2['original_query']}")
+
+    result_2 = query_app.invoke(mock_state_2)
+
+    print(f"\n  【结果】:")
+    print(f"  商品名: {result_2.get('item_names')}")
+    answer_2 = result_2.get("answer", "")
+    print(f"  答案: {answer_2}")
+
+    print("\n" + "=" * 60)
+    print("全部测试完成")

@@ -1,4 +1,4 @@
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, Union
 
 from knowledge.processor.import_process.exceptions import StateFieldError
 from knowledge.processor.query_process.base import BaseNode
@@ -14,31 +14,31 @@ logger = logging.getLogger(__name__)
 
 class HydeVectorSearchNode(BaseNode):
     name = "hybrid_vector_search_node"
-    def process(self, state: QueryGraphState) -> QueryGraphState:
+    def process(self, state: QueryGraphState) -> Union[QueryGraphState,Dict[str,Any]]:
         rewritten_query, item_names = self._validate_state(state)
         #生成假设性文档
         hy_document:str=self._generate_hy_document(rewritten_query,item_names)
 
         if hy_document is None:
-            return state
+            return {}
 
         try:
             milvue_client = StorageClients.get_milvus_client()
         except ConnectionError as e:
             logger.error(f"获取milvus客户端失败{str(e)}")
-            return state
+            return {}
 
         try:
             bge_m3_client = AIClients.get_bge_m3_client()
         except ConnectionError as e:
             logger.error(f"获取嵌入模型失败{str(e)}")
-            return state
+            return {}
         try:
             embed_hy_vector=generate_hybrid_embeddings(embedding_model=bge_m3_client,embedding_documents=[ f"{rewritten_query}\n{hy_document}" ])
 
         except Exception as e:
             logger.error(f"获取假设性文档嵌入向量失败{str(e)}")
-            return state
+            return {}
 
 
 
@@ -60,10 +60,11 @@ class HydeVectorSearchNode(BaseNode):
                                                             output_fields=["chunk_id", "content", "item_name","title"]
                                                             )
             if not hybrid_search_res or not hybrid_search_res[0]:
-                return state
+                return {}
 
-            state['embedding_chunks'] = hybrid_search_res[0]
-            return state
+          #  state['embedding_chunks'] = hybrid_search_res[0]
+         #   return state
+            return {"hyde_embedding_chunks":hybrid_search_res[0]}
 
         except Exception as e:
             logger.error(f"用户的问题是{rewritten_query} 对应的假设性文档是{hy_document} 创建向量搜索请求失败{str(e)}")
@@ -90,8 +91,8 @@ class HydeVectorSearchNode(BaseNode):
         except ConnectionError as e:
             logger.error(f"获取嵌入模型失败{str(e)}")
             return None
-        system_prompt=(f"您是一位{item_names}方面的助手，主要擅长编写技术文档,操作手册,文档规格说明")
-        user_prompt=USER_HYDE_PROMPT_TEMPLATE.format(file_title=rewritten_query,
+        system_prompt = f"您是一位{item_names}方面的技术文档领域的专家，主要擅长编写技术文档、操作手册、文档规格说明"
+        user_prompt=USER_HYDE_PROMPT_TEMPLATE.format(rewritten_query=rewritten_query,
                                                   item_names=item_names)
         try:
             llm_response=llm_client.invoke([system_prompt,user_prompt])

@@ -31,30 +31,79 @@ class RrfMergeNode(BaseNode):
         return state
 
 
-    def _merge_rrf_docs(self,rrf_inputs:list[Tuple[list[Dict[str,Any]],float]],rrf_k:int,rrf_max_results:int)\
-            ->list[Tuple[Dict[str,Any]],float]:
+    # def _merge_rrf_docs(self,rrf_inputs:list[Tuple[list[Dict[str,Any]],float]],rrf_k:int,rrf_max_results:int)\
+    #         ->list[Tuple[Dict[str,Any]],float]:
+    #     """
+    #     合并多个rrf结果
+    #     Args:
+    #         rrf_inputs: 多个rrf结果
+    #         rrf_k: rrf的k值
+    #         rrf_max_results: 最大返回结果数
+    #     Returns:
+    #
+    #     """
+    #     chunk_source={}
+    #     chunk_data={}
+    #     for search_result,weight in rrf_inputs:
+    #         for rank,res in enumerate(search_result,1):
+    #             chunk_id=res.get("chunk_id")
+    #             if not chunk_id:
+    #                 continue
+    #             chunk_data.setdefault(chunk_id,res)
+    #
+    #     final_rrf_result=sorted([ (chunk_data.get(chunk_id),score)  for chunk_id,score in chunk_source.items()],key=lambda x:x[1],reverse=True)
+    #
+    #     return final_rrf_result[:rrf_max_results] if rrf_max_results else final_rrf_result
+
+
+
+    def _merge_rrf_docs(self, rrf_inputs: list[Tuple[list[Dict[str, Any]], float]], rrf_k: int, rrf_max_results: int) -> \
+            list[Tuple[Dict[str, Any], float]]:
         """
-        合并多个rrf结果
+        RRF计算多路检索返回的文档得分
+        公式：weight(i)/ k+rank(i)[doc]
         Args:
-            rrf_inputs: 多个rrf结果
-            rrf_k: rrf的k值
-            rrf_max_results: 最大返回结果数
+            rrf_inputs:  多路检索的文档以及对应的权重
+            rrf_k:  平滑参数
+            rrf_max_results: 最大返回的个数
+
         Returns:
+           多路检索文档对象以及经过RRF计算之后的文档得分
+           Tuple[Dict,Float]:第一个元素是文档对象 第二个元素是文档对象对应的得分
 
         """
-        chunk_source={}
-        chunk_data={}
-        for search_result,weight in rrf_inputs:
-            for rank,res in enumerate(search_result,1):
-                chunk_id=res.get("chunk_id")
+
+        chunk_score = {}
+        chunk_data = {}  # chunk_id 和chunk对象
+
+        # 1. 遍历所有路的检索结果
+        for search_result, weight in rrf_inputs:
+
+            # 2. 遍历某一路的检索结果
+            for rank, entity in enumerate(search_result, 1):
+
+                # 2.1 获取chunk_id
+                chunk_id = entity.get('chunk_id')
+
+                # 2.2 判断chunk_id
                 if not chunk_id:
                     continue
-                chunk_source[chunk_id]=chunk_source.get("chunk_id",float(0))  +weight/(rrf_k+rank)
-                chunk_data.setdefault(chunk_id,res)
 
-        final_rrf_result=sorted([ (chunk_data.get(chunk_id),score)  for chunk_id,score in chunk_source.items()],key=lambda x:x[1],reverse=True)
+                # 2.3 存储chunk_id的分数
+                chunk_score[chunk_id] = chunk_score.get(chunk_id, float(0)) + weight / (rrf_k + rank)
 
+                # 2.4 存储chunk_id 和chunk对象
+                chunk_data.setdefault(chunk_id, entity)  # （默认根据key）去重
+
+        # 3. 排序以及构建chunk对象和得分的结果
+        final_rrf_result = sorted([(chunk_data.get(chunk_id), score) for chunk_id, score in chunk_score.items()],
+                                  key=lambda x: x[1], reverse=True)
+
+        # 4. 返回(简单使用rrf_max_results判断 返回)
         return final_rrf_result[:rrf_max_results] if rrf_max_results else final_rrf_result
+
+
+
 
     def _validate_search_result(self, search_chunks:list[Dict[str,Any]]):
         if not  search_chunks:

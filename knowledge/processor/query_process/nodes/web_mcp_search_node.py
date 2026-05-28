@@ -37,7 +37,7 @@ class WebMcpSearchNode(BaseNode):
         mcp_result = asyncio.run(self._create_execute_web_search(validated_rewritten_query))
 
         if not mcp_result:
-            return state
+            return {}
 
         # 3. 更新state web_search_docs
 

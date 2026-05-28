@@ -1,23 +1,22 @@
 import json
-import logging
 import re
 from json import JSONDecodeError
 from typing import *
 
+from langchain_core.messages import SystemMessage, HumanMessage
+
+from knowledge.processor.query_process.base import BaseNode
 from knowledge.processor.query_process.config import get_config
+from knowledge.processor.query_process.state import QueryGraphState
 from knowledge.prompt.query.query_prompt import ITEM_NAME_EXTRACT_TEMPLATE
+from knowledge.utils.bge_m3_embedding_util import *
+from knowledge.utils.client.ai_clients import AIClients
 from knowledge.utils.client.storage_clients import StorageClients
 from knowledge.utils.milvus_util import create_hybrid_search_requests, execute_hybrid_search_query
+from knowledge.utils.mongo_history_util import get_recent_messages
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-from langchain_core.messages import SystemMessage, HumanMessage
-from knowledge.processor.query_process.base import BaseNode
-from knowledge.processor.query_process.state import QueryGraphState
-from knowledge.utils.client.ai_clients import AIClients
-from knowledge.utils.bge_m3_embedding_util import *
-
-
 class _ItemNameExtractor:
     pass
 
@@ -176,6 +175,7 @@ class ItemNameConfirmedNode(BaseNode):
     name = "item_name_confirmed_node"
 
     def __init__(self):
+        super().__init__()
         self._extractor = _ItemNameExtractor()
         self._aligner = _ItemNameAligner()
 
@@ -183,9 +183,18 @@ class ItemNameConfirmedNode(BaseNode):
         # 获取用户原始问题
         original_query = state.get("original_query")
         # TODO 获取历史对话
-        history_context = ""
+        history_context = get_recent_messages(state.get('session_id'),limit=10 )
+        format_history=[]
+        for history in history_context:
+            role=history.get("role",'')
+            text=history.get("text",'')
+            formatted_context=f"角色:{role} 内容{text}"
+            format_history.append(formatted_context)
+        format_history_str=" ".join(format_history)
 
-        llm_result: Dict[str, Any] = self._extractor_extract_item_name(original_query, history_context)
+
+
+        llm_result: Dict[str, Any] = self._extractor_extract_item_name(original_query, format_history_str)
 
         item_names = llm_result.get("item_names")
         rewritten_query = llm_result.get("rewritten_query")
@@ -195,7 +204,7 @@ class ItemNameConfirmedNode(BaseNode):
         else:
             confirmed, options = [], []
         self._decide(confirmed, options, state, rewritten_query, item_names)
-
+        state['history']=history_context
         return state
 
     def _extractor_extract_item_name(self, original_query: str, history_context: str) -> Dict[str, Any]:
