@@ -399,7 +399,7 @@
             <div class="file-item" id="${id}">
                 <div class="file-info">
                     <div class="file-header">
-                        <span class="file-name">${file.name}</span>
+                        <span class="file-name">${escapeHtml(file.name)}</span>
                         <span class="file-size">${(file.size / 1024).toFixed(2)} KB</span>
                     </div>
                     <div class="progress-wrapper">
@@ -466,6 +466,12 @@
             errLog.style.color = "#ef4444";
             logListEl.appendChild(errLog);
         }
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     function normalizeLogText(text) {
